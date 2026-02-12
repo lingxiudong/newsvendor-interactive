@@ -204,7 +204,7 @@
         Use the sliders to change the order quantity <em>q</em>, the wholesale price <em>w</em>, and (if you wish) the retail price
         <em>p</em> and unit cost <em>c</em>. The charts on the right show how expected profit, expected sales, and service metrics respond
         to your choices. The shaded area in the demand density plot (bottom left) represents the in-stock probability
-        <em>P(D ≤ q)</em>. Circle markers show the newsvendor’s optimal order quantity
+        <em>Pr(D ≤ q)</em>. Circle markers show the newsvendor’s optimal order quantity
         <em>q<sub>N</sub> = F⁻¹((p − w)/p)</em>, and square markers show the supply chain–optimal quantity
         <em>q<sub>SC</sub> = F⁻¹((p − c)/p)</em>. As you adjust <em>w</em>, watch how the gap between these two quantities changes and
         how it affects performance.
@@ -268,7 +268,7 @@
             <div class="metric-value" id="salesMetric"></div>
           </div>
           <div class="metric-chip">
-            <div class="metric-label">In-stock probability P(D ≤ q)</div>
+            <div class="metric-label">In-stock probability Pr(D ≤ q)</div>
             <div class="metric-value" id="instockMetric"></div>
           </div>
           <div class="metric-chip">
@@ -317,7 +317,7 @@
       <div class="chart-container">
         <p class="chart-title">Service Metrics vs. Order Quantity</p>
         <p class="chart-subtitle">
-          In-stock probability P(D ≤ q) and fill rate.
+          In-stock probability Pr(D ≤ q) and fill rate.
         </p>
         <div id="serviceChart"></div>
       </div>
