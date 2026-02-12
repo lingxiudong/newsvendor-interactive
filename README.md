@@ -1,9 +1,7 @@
 # Newsvendor Interactive Simulator
 
 This page illustrates the classic **newsvendor problem**, where a retailer must choose a single order quantity $q$ before seeing uncertain demand $D$. In this simulator, demand follows a Normal distribution,
-\[
-D \sim \mathcal{N}(100, 30^2),
-\]
+$D \sim \mathcal{N}(100, 30^2),$
 and you can explore how different choices of $q$ and wholesale price $w$ affect performance.
 
 ## How to use this tool
