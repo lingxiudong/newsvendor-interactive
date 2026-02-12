@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Newsvendor Interactive Tool</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f7f7fb;
+      color: #222;
+    }
+
+    header {
+      padding: 16px 24px;
+      background: #1f2937;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 {
+      font-size: 20px;
+      margin: 0;
+    }
+
+    main {
+      padding: 16px 24px 32px;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+      margin-bottom: 16px;
+    }
+
+    .intro-card {
+      grid-column: 1 / -1;
+      background: #eef2ff;
+      border-left: 4px solid #4f46e5;
+    }
+
+    .intro-card h2 {
+      font-size: 16px;
+      margin: 0 0 6px;
+    }
+
+    .intro-card p {
+      font-size: 13px;
+      margin: 4px 0 10px;
+      color: #374151;
+    }
+
+    .card h2 {
+      font-size: 16px;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    .card h3 {
+      font-size: 14px;
+      margin-top: 0;
+      margin-bottom: 6px;
+      color: #4b5563;
+    }
+
+    .controls-group {
+      margin-bottom: 12px;
+    }
+
+    .controls-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .controls-group input[type="range"] {
+      width: 100%;
+    }
+
+    .controls-inline {
+      display: flex;
+      gap: 8px;
+    }
+
+    .controls-inline .controls-group {
+      flex: 1;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px 6px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 13px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .metric-chip {
+      background: #f3f4ff;
+      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metric-label {
+      color: #6b7280;
+    }
+
+    .metric-value {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .chart-container {
+      background: white;
+      border-radius: 16px;
+      padding: 12px 12px 4px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+      width: 100%;
+      margin: 0;
+      box-sizing: border-box;
+    }
+
+    .chart-title {
+      font-size: 14px;
+      margin: 0 0 4px;
+      color: #374151;
+      font-weight: 700;
+    }
+
+    .chart-subtitle {
+      font-size: 12px;
+      margin: 0 0 6px;
+      color: #6b7280;
+    }
+
+    .w-icons-row {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 24px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: #4b5563;
+    }
+
+    .w-icons-row .icon-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      text-align: center;
+    }
+
+    .w-icons-row .icon-block span.icon {
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Newsvendor Interactive (Normal Demand)</h1>
+  </header>
+
+  <main>
+    <!-- Intro card -->
+    <div class="card intro-card">
+      <h2>How to use this newsvendor simulator</h2>
+      <p>
+        This page illustrates the classic newsvendor problem, where a newsvendor must choose a single order quantity
+        <em>q</em> before observing uncertain demand <em>D</em> that follows a Normal distribution, <em>N(100, 30²)</em>.
+        Use the sliders to change the order quantity <em>q</em>, the wholesale price <em>w</em>, and (if you wish) the retail price
+        <em>p</em> and unit cost <em>c</em>. The charts on the right show how expected profit, expected sales, and service metrics respond
+        to your choices. The shaded area in the demand density plot (bottom left) represents the in-stock probability
+        <em>P(D ≤ q)</em>. Circle markers show the newsvendor’s optimal order quantity
+        <em>q<sub>N</sub> = F⁻¹((p − w)/p)</em>, and square markers show the supply chain–optimal quantity
+        <em>q<sub>SC</sub> = F⁻¹((p − c)/p)</em>. As you adjust <em>w</em>, watch how the gap between these two quantities changes and
+        how it affects performance.
+      </p>
+      <div class="w-icons-row">
+        <div class="icon-block">
+          <span class="icon">🏭</span>
+          <span>Distributor</span>
+        </div>
+        <div class="icon-block">
+          <span class="icon">📰</span>
+          <span>Newsvendor</span>
+        </div>
+        <div class="icon-block">
+          <span class="icon">🧍‍♀️🧍‍♂️🧍</span>
+          <span>Customers</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEFT: Controls + metrics + density -->
+    <section>
+      <div class="card">
+        <h2>Parameters</h2>
+
+        <div class="controls-group">
+          <label>
+            <span>Order quantity q</span>
+            <span><span id="qDisplay">100</span> units</span>
+          </label>
+          <input id="qSlider" type="range" min="0" max="220" step="1" value="100">
+        </div>
+
+        <div class="controls-group">
+          <label>
+            <span>Wholesale price w</span>
+            <span>$<span id="wDisplay">0.40</span></span>
+          </label>
+          <input id="wSlider" type="range" min="0" max="1" step="0.01" value="0.40">
+        </div>
+
+        <div class="controls-inline">
+          <div class="controls-group">
+            <label><span>Retail price p</span></label>
+            <input id="pInput" type="number" step="0.01" value="1.00" min="0">
+          </div>
+          <div class="controls-group">
+            <label><span>Unit cost c</span></label>
+            <input id="cInput" type="number" step="0.01" value="0.10" min="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Metrics at current q and w</h2>
+        <h3>Demand: Normal(μ = 100, σ = 30)</h3>
+
+        <div class="metrics-grid">
+          <div class="metric-chip">
+            <div class="metric-label">Expected sales E[min(D, q)]</div>
+            <div class="metric-value" id="salesMetric"></div>
+          </div>
+          <div class="metric-chip">
+            <div class="metric-label">In-stock probability P(D ≤ q)</div>
+            <div class="metric-value" id="instockMetric"></div>
+          </div>
+          <div class="metric-chip">
+            <div class="metric-label">Fill rate</div>
+            <div class="metric-value" id="fillMetric"></div>
+          </div>
+          <div class="metric-chip">
+            <div class="metric-label">Newsvendor profit</div>
+            <div class="metric-value" id="nvProfitMetric"></div>
+          </div>
+          <div class="metric-chip">
+            <div class="metric-label">Distributor profit</div>
+            <div class="metric-value" id="distProfitMetric"></div>
+          </div>
+          <div class="metric-chip">
+            <div class="metric-label">Total supply chain profit</div>
+            <div class="metric-value" id="scProfitMetric"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>In-stock probability at current q</h2>
+        <div id="instockChart" style="height: 240px;"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Charts -->
+    <section class="charts-grid">
+      <div class="chart-container">
+        <p class="chart-title">Profit vs. Order Quantity</p>
+        <p class="chart-subtitle">
+          Shows expected profit for the newsvendor, distributor, and the overall supply chain.
+        </p>
+        <div id="profitChart"></div>
+      </div>
+
+      <div class="chart-container">
+        <p class="chart-title">Expected Sales vs. Order Quantity</p>
+        <p class="chart-subtitle">
+          E[min(D, q)] as q increases under Normal demand.
+        </p>
+        <div id="salesChart"></div>
+      </div>
+
+      <div class="chart-container">
+        <p class="chart-title">Service Metrics vs. Order Quantity</p>
+        <p class="chart-subtitle">
+          In-stock probability P(D ≤ q) and fill rate.
+        </p>
+        <div id="serviceChart"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const mu = 100;
+    const sigma = 30;
+
+    const colorNv = "#1f77b4";
+    const colorDist = "#ff7f0e";
+    const colorSc = "#2ca02c";
+
+    function phi(z) {
+      return Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI);
+    }
+
+    function erf(x) {
+      const sign = x >= 0 ? 1 : -1;
+      const a1 = 0.254829592;
+      const a2 = -0.284496736;
+      const a3 = 1.421413741;
+      const a4 = -1.453152027;
+      const a5 = 1.061405429;
+      const p = 0.3275911;
+
+      const t = 1.0 / (1.0 + p * Math.abs(x));
+      const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+
+      return sign * y;
+    }
+
+    function Phi(z) {
+      return 0.5 * (1 + erf(z / Math.SQRT2));
+    }
+
+    // inverse standard normal via binary search
+    function invPhi(p) {
+      const eps = 1e-6;
+      let pp = p;
+      if (pp <= eps) pp = eps;
+      if (pp >= 1 - eps) pp = 1 - eps;
+
+      let lo = -8, hi = 8;
+      for (let i = 0; i < 50; i++) {
+        const mid = (lo + hi) / 2;
+        const val = Phi(mid);
+        if (val < pp) lo = mid; else hi = mid;
+      }
+      return (lo + hi) / 2;
+    }
+
+    function expectedSales(q) {
+      const z = (q - mu) / sigma;
+      const pdf = phi(z);
+      const cdf = Phi(z);
+      return mu * cdf - sigma * pdf + q * (1 - cdf);
+    }
+
+    // Precompute density
+    const pdfX = [];
+    const pdfY = [];
+    const xMin = 0;
+    const xMax = 220;
+    const pdfSteps = 220;
+    for (let i = 0; i <= pdfSteps; i++) {
+      const x = xMin + (xMax - xMin) * i / pdfSteps;
+      const z = (x - mu) / sigma;
+      pdfX.push(x);
+      pdfY.push(phi(z) / sigma);
+    }
+    const pdfYMax = Math.max(...pdfY);
+
+    function computeMetricsOverQ(p, c, w, qMax, steps) {
+      const qs = [];
+      const salesArr = [];
+      const instockArr = [];
+      const fillArr = [];
+      const nvProfitArr = [];
+      const distProfitArr = [];
+      const scProfitArr = [];
+
+      for (let i = 0; i <= steps; i++) {
+        const q = (qMax * i) / steps;
+        const z = (q - mu) / sigma;
+        const cdf = Phi(z);
+        const sales = expectedSales(q);
+        const fill = sales / mu;
+        const nvProfit = p * sales - w * q;
+        const distProfit = (w - c) * q;
+        const scProfit = p * sales - c * q;
+
+        qs.push(q);
+        salesArr.push(sales);
+        instockArr.push(cdf);
+        fillArr.push(fill);
+        nvProfitArr.push(nvProfit);
+        distProfitArr.push(distProfit);
+        scProfitArr.push(scProfit);
+      }
+
+      return {
+        qs,
+        salesArr,
+        instockArr,
+        fillArr,
+        nvProfitArr,
+        distProfitArr,
+        scProfitArr
+      };
+    }
+
+    function formatMoney(x) {
+      return "$" + x.toFixed(3);
+    }
+
+    function formatProb(x) {
+      return (100 * x).toFixed(1) + "%";
+    }
+
+    function enforceWRange(wSlider, p, c) {
+      const minVal = Math.min(c, p);
+      const maxVal = Math.max(c, p);
+
+      wSlider.min = minVal;
+      wSlider.max = maxVal;
+
+      let wVal = parseFloat(wSlider.value);
+      if (isNaN(wVal) || wVal < minVal || wVal > maxVal) {
+        wVal = (minVal + maxVal) / 2;
+        wSlider.value = wVal;
+      }
+      return wVal;
+    }
+
+    function updateAll() {
+      const qSlider = document.getElementById("qSlider");
+      const wSlider = document.getElementById("wSlider");
+      const pInput = document.getElementById("pInput");
+      const cInput = document.getElementById("cInput");
+
+      const q = parseFloat(qSlider.value);
+      const p = parseFloat(pInput.value) || 1.0;
+      const c = parseFloat(cInput.value) || 0.1;
+
+      const w = enforceWRange(wSlider, p, c);
+
+      // ---- Optimal quantities with nonnegativity constraint ----
+      const fractileNvRaw = (p - w) / p;
+      const fractileScRaw = (p - c) / p;
+
+      let qNv, qSc;
+
+      if (fractileNvRaw <= 0) {
+        qNv = 0;                 // if p <= w, optimal is q_N = 0
+      } else {
+        const zNv = invPhi(fractileNvRaw);
+        qNv = mu + sigma * zNv;
+      }
+
+      if (fractileScRaw <= 0) {
+        qSc = 0;                 // if p <= c, optimal SC order is 0
+      } else {
+        const zSc = invPhi(fractileScRaw);
+        qSc = mu + sigma * zSc;
+      }
+
+      // Metrics at current q
+      const z = (q - mu) / sigma;
+      const cdf = Phi(z);
+      const sales = expectedSales(q);
+      const fill = sales / mu;
+      const nvProfit = p * sales - w * q;
+      const distProfit = (w - c) * q;
+      const scProfit = p * sales - c * q;
+
+      document.getElementById("qDisplay").textContent = q.toFixed(0);
+      document.getElementById("wDisplay").textContent = w.toFixed(2);
+
+      document.getElementById("salesMetric").textContent = sales.toFixed(2) + " units";
+      document.getElementById("instockMetric").textContent = formatProb(cdf);
+      document.getElementById("fillMetric").textContent = formatProb(fill);
+      document.getElementById("nvProfitMetric").textContent = formatMoney(nvProfit);
+      document.getElementById("distProfitMetric").textContent = formatMoney(distProfit);
+      document.getElementById("scProfitMetric").textContent = formatMoney(scProfit);
+
+      // In-stock density chart (current q)
+      const shadeX = [];
+      const shadeY = [];
+      for (let i = 0; i < pdfX.length; i++) {
+        if (pdfX[i] <= q) {
+          shadeX.push(pdfX[i]);
+          shadeY.push(pdfY[i]);
+        }
+      }
+
+      const instockLayout = {
+        margin: { l: 65, r: 10, t: 10, b: 35 },
+        xaxis: { title: "Demand D" },
+        yaxis: { title: "Density f(D)" },
+        height: 220,
+        showlegend: false
+      };
+
+      const instockData = [
+        {
+          x: pdfX,
+          y: pdfY,
+          mode: "lines",
+          line: { width: 2 },
+          name: "Density"
+        },
+        {
+          x: shadeX,
+          y: shadeY,
+          mode: "lines",
+          fill: "tozeroy",
+          line: { width: 0 },
+          name: "P(D ≤ q)"
+        },
+        {
+          x: [q, q],
+          y: [0, pdfYMax],
+          mode: "lines",
+          line: { dash: "dash" },
+          name: "q"
+        }
+      ];
+
+      Plotly.react("instockChart", instockData, instockLayout, { displayModeBar: false });
+
+      // Right-hand charts
+      const qMax = 220;
+      const steps = 120;
+      const data = computeMetricsOverQ(p, c, w, qMax, steps);
+
+      const salesNvQ = expectedSales(qNv);
+      const salesScQ = expectedSales(qSc);
+
+      const nvProfitAtNv = p * salesNvQ - w * qNv;
+      const scProfitAtSc = p * salesScQ - c * qSc;
+
+      const instockAtNv = Phi((qNv - mu) / sigma);
+      const fillAtSc = salesScQ / mu;
+
+      const commonHeight = 260;
+      const commonMargin = { l: 50, r: 10, t: 50, b: 40 };
+
+      // Profit vs q
+      const profitLayout = {
+        margin: commonMargin,
+        xaxis: { title: "Order quantity q" },
+        yaxis: { title: "Expected profit ($)" },
+        legend: { orientation: "h", y: 1.25 },
+        height: commonHeight
+      };
+
+      const profitData = [
+        {
+          x: data.qs,
+          y: data.nvProfitArr,
+          name: "Newsvendor",
+          mode: "lines",
+          line: { color: colorNv }
+        },
+        {
+          x: data.qs,
+          y: data.distProfitArr,
+          name: "Distributor",
+          mode: "lines",
+          line: { color: colorDist }
+        },
+        {
+          x: data.qs,
+          y: data.scProfitArr,
+          name: "Supply chain total",
+          mode: "lines",
+          line: { color: colorSc }
+        },
+        {
+          x: [qNv],
+          y: [nvProfitAtNv],
+          mode: "markers",
+          marker: { color: colorNv, size: 9, symbol: "circle" },
+          name: "q_N",
+          showlegend: false
+        },
+        {
+          x: [qSc],
+          y: [scProfitAtSc],
+          mode: "markers",
+          marker: { color: colorSc, size: 10, symbol: "square" },
+          name: "q_SC",
+          showlegend: false
+        }
+      ];
+
+      Plotly.react("profitChart", profitData, profitLayout, { displayModeBar: false });
+
+      // Expected sales vs q
+      const salesLayout = {
+        margin: commonMargin,
+        xaxis: { title: "Order quantity q" },
+        yaxis: { title: "Expected sales E[min(D, q)]" },
+        showlegend: false,
+        height: commonHeight
+      };
+
+      const salesData = [
+        {
+          x: data.qs,
+          y: data.salesArr,
+          name: "Expected sales",
+          mode: "lines",
+          line: { color: colorNv }
+        },
+        {
+          x: [qNv],
+          y: [salesNvQ],
+          mode: "markers",
+          marker: { color: colorNv, size: 9, symbol: "circle" },
+          name: "q_N",
+          showlegend: false
+        },
+        {
+          x: [qSc],
+          y: [salesScQ],
+          mode: "markers",
+          marker: { color: colorNv, size: 10, symbol: "square" },
+          name: "q_SC",
+          showlegend: false
+        }
+      ];
+
+      Plotly.react("salesChart", salesData, salesLayout, { displayModeBar: false });
+
+      // Service metrics vs q
+      const serviceLayout = {
+        margin: commonMargin,
+        xaxis: { title: "Order quantity q" },
+        yaxis: { title: "Service level" },
+        legend: { orientation: "h", y: 1.25 },
+        height: commonHeight
+      };
+
+      const serviceData = [
+        {
+          x: data.qs,
+          y: data.instockArr,
+          name: "In-stock probability P(D ≤ q)",
+          mode: "lines",
+          line: { color: colorNv }
+        },
+        {
+          x: data.qs,
+          y: data.fillArr,
+          name: "Fill rate",
+          mode: "lines",
+          line: { color: colorDist }
+        },
+        {
+          x: [qNv],
+          y: [instockAtNv],
+          mode: "markers",
+          marker: { color: colorNv, size: 9, symbol: "circle" },
+          name: "q_N",
+          showlegend: false
+        },
+        {
+          x: [qSc],
+          y: [fillAtSc],
+          mode: "markers",
+          marker: { color: colorDist, size: 10, symbol: "square" },
+          name: "q_SC",
+          showlegend: false
+        }
+      ];
+
+      Plotly.react("serviceChart", serviceData, serviceLayout, { displayModeBar: false });
+    }
+
+    document.getElementById("qSlider").addEventListener("input", updateAll);
+    document.getElementById("wSlider").addEventListener("input", updateAll);
+    document.getElementById("pInput").addEventListener("input", updateAll);
+    document.getElementById("cInput").addEventListener("input", updateAll);
+
+    updateAll();
+  </script>
+</body>
+</html>
