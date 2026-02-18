@@ -382,8 +382,8 @@
     const pdfX = [];
     const pdfY = [];
     const xMin = 0;
-    const xMax = 220;
-    const pdfSteps = 220;
+    const xMax = 2200;
+    const pdfSteps = 2200;
     for (let i = 0; i <= pdfSteps; i++) {
       const x = xMin + (xMax - xMin) * i / pdfSteps;
       const z = (x - mu) / sigma;
@@ -551,7 +551,7 @@
       Plotly.react("instockChart", instockData, instockLayout, { displayModeBar: false });
 
       // Right-hand charts
-      const qMax = 220;
+      const qMax = 2200;
       const steps = 120;
       const data = computeMetricsOverQ(p, c, w, qMax, steps);
 
