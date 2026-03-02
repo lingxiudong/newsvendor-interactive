@@ -202,11 +202,11 @@
         This page illustrates the classic newsvendor problem, where a newsvendor must choose a single order quantity
         <em>q</em> before observing uncertain demand <em>D</em> that follows a Normal distribution, <em>N(1000, 200²)</em>.
         Use the sliders to change the order quantity <em>q</em>, the wholesale price <em>w</em>, and (if you wish) the retail price
-        <em>p</em> and unit cost <em>c</em>. The charts on the right show how expected profit, expected sales, and service metrics respond
+        <em>p</em>, unit cost <em>c</em>, and salvage value <em>v</em> (the amount recovered per unsold unit). The charts on the right show how expected profit, expected sales, and service metrics respond
         to your choices. The shaded area in the demand density plot (bottom left) represents the in-stock probability
         <em>Pr(D ≤ q)</em>. Circle markers show the newsvendor’s optimal order quantity
-        <em>q<sub>N</sub> = F⁻¹((p − w)/p)</em>, and square markers show the supply chain–optimal quantity
-        <em>q<sub>SC</sub> = F⁻¹((p − c)/p)</em>. As you adjust <em>w</em>, watch how the gap between these two quantities changes and
+        <em>q<sub>N</sub> = F⁻¹((p − w)/(p − v))</em>, and square markers show the supply chain–optimal quantity
+        <em>q<sub>SC</sub> = F⁻¹((p − c)/(p − v))</em>. As you adjust <em>w</em>, watch how the gap between these two quantities changes and
         how it affects performance.
       </p>
       <div class="w-icons-row">
@@ -254,6 +254,12 @@
           <div class="controls-group">
             <label><span>Unit cost c</span></label>
             <input id="cInput" type="number" step="0.01" value="0.20" min="0">
+          </div>
+        </div>
+        <div class="controls-inline">
+          <div class="controls-group">
+            <label><span>Salvage value v</span></label>
+            <input id="vInput" type="number" step="0.01" value="0.10" min="0">
           </div>
         </div>
       </div>
@@ -392,7 +398,7 @@
     }
     const pdfYMax = Math.max(...pdfY);
 
-    function computeMetricsOverQ(p, c, w, qMax, steps) {
+    function computeMetricsOverQ(p, c, w, v, qMax, steps) {
       const qs = [];
       const salesArr = [];
       const instockArr = [];
@@ -406,10 +412,11 @@
         const z = (q - mu) / sigma;
         const cdf = Phi(z);
         const sales = expectedSales(q);
+        const leftover = q - sales;
         const fill = sales / mu;
-        const nvProfit = p * sales - w * q;
+        const nvProfit = (p - v) * sales - (w - v) * q;
         const distProfit = (w - c) * q;
-        const scProfit = p * sales - c * q;
+        const scProfit = (p - v) * sales - (c - v) * q;
 
         qs.push(q);
         salesArr.push(sales);
@@ -459,28 +466,36 @@
       const wSlider = document.getElementById("wSlider");
       const pInput = document.getElementById("pInput");
       const cInput = document.getElementById("cInput");
+      const vInput = document.getElementById("vInput");
 
       const q = parseFloat(qSlider.value);
       const p = parseFloat(pInput.value) || 1.0;
-      const c = parseFloat(cInput.value) || 0.1;
+      const c = parseFloat(cInput.value) || 0.2;
+      const v = parseFloat(vInput.value) || 0.0;
 
       const w = enforceWRange(wSlider, p, c);
 
       // ---- Optimal quantities with nonnegativity constraint ----
-      const fractileNvRaw = (p - w) / p;
-      const fractileScRaw = (p - c) / p;
+      // CR_nv = (p - w) / (p - v);  CR_sc = (p - c) / (p - v)
+      const pMinusV = p - v;
+      const fractileNvRaw = pMinusV > 0 ? (p - w) / pMinusV : 0;
+      const fractileScRaw = pMinusV > 0 ? (p - c) / pMinusV : 0;
 
       let qNv, qSc;
 
       if (fractileNvRaw <= 0) {
-        qNv = 0;                 // if p <= w, optimal is q_N = 0
+        qNv = 0;
+      } else if (fractileNvRaw >= 1) {
+        qNv = mu + sigma * 4;   // effectively infinite
       } else {
         const zNv = invPhi(fractileNvRaw);
         qNv = mu + sigma * zNv;
       }
 
       if (fractileScRaw <= 0) {
-        qSc = 0;                 // if p <= c, optimal SC order is 0
+        qSc = 0;
+      } else if (fractileScRaw >= 1) {
+        qSc = mu + sigma * 4;
       } else {
         const zSc = invPhi(fractileScRaw);
         qSc = mu + sigma * zSc;
@@ -490,10 +505,11 @@
       const z = (q - mu) / sigma;
       const cdf = Phi(z);
       const sales = expectedSales(q);
+      const leftover = q - sales;
       const fill = sales / mu;
-      const nvProfit = p * sales - w * q;
+      const nvProfit = (p - v) * sales - (w - v) * q;
       const distProfit = (w - c) * q;
-      const scProfit = p * sales - c * q;
+      const scProfit = (p - v) * sales - (c - v) * q;
 
       document.getElementById("qDisplay").textContent = q.toFixed(0);
       document.getElementById("wDisplay").textContent = w.toFixed(2);
@@ -553,13 +569,13 @@
       // Right-hand charts
       const qMax = 2200;
       const steps = 120;
-      const data = computeMetricsOverQ(p, c, w, qMax, steps);
+      const data = computeMetricsOverQ(p, c, w, v, qMax, steps);
 
       const salesNvQ = expectedSales(qNv);
       const salesScQ = expectedSales(qSc);
 
-      const nvProfitAtNv = p * salesNvQ - w * qNv;
-      const scProfitAtSc = p * salesScQ - c * qSc;
+      const nvProfitAtNv = (p - v) * salesNvQ - (w - v) * qNv;
+      const scProfitAtSc = (p - v) * salesScQ - (c - v) * qSc;
 
       const instockAtNv = Phi((qNv - mu) / sigma);
       const fillAtSc = salesScQ / mu;
@@ -603,7 +619,7 @@
           y: [nvProfitAtNv],
           mode: "markers",
           marker: { color: colorNv, size: 9, symbol: "circle" },
-          name: "q_N",
+          name: "Profit at q_N",
           showlegend: false
         },
         {
@@ -611,7 +627,7 @@
           y: [scProfitAtSc],
           mode: "markers",
           marker: { color: colorSc, size: 10, symbol: "square" },
-          name: "q_SC",
+          name: "Profit at q_SC",
           showlegend: false
         }
       ];
@@ -704,6 +720,7 @@
     document.getElementById("wSlider").addEventListener("input", updateAll);
     document.getElementById("pInput").addEventListener("input", updateAll);
     document.getElementById("cInput").addEventListener("input", updateAll);
+    document.getElementById("vInput").addEventListener("input", updateAll);
 
     updateAll();
   </script>
