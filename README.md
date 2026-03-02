@@ -25,10 +25,10 @@ and you can explore how different choices of $q$ and wholesale price $w$ affect 
 
 4. **Pay attention to the markers**:
    - A **circle marker** shows the **newsvendor’s optimal order quantity**
-     $q_N = F^{-1}\left(\frac{p - w}{p}\right),$
+     $q_N = F^{-1}\left(\frac{p - w}{p-v}\right),$
      which maximizes the newsvendor’s own expected profit.
    - A **square marker** shows the **supply chain–optimal order quantity**
-     $q_{SC} = F^{-1}\left(\frac{p - c}{p}\right),$
+     $q_{SC} = F^{-1}\left(\frac{p - c}{p-v}\right),$
      which maximizes total supply chain profit (distributor + newsvendor).
 
 ## What to think about
